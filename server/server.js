@@ -66,7 +66,15 @@ app.use(
 app.use(express.json())
 
 // MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI 
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/invoice-builder"
+
+// MongoDB connection options to handle connection issues
+const mongooseOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+}
 
 // MongoDB Schemas
 const userSchema = new mongoose.Schema({
@@ -97,35 +105,33 @@ const invoiceSchema = new mongoose.Schema({
 })
 
 // Create models
-const User = mongoose.model("User", userSchema)
-const Product = mongoose.model("Product", productSchema)
-const Invoice = mongoose.model("Invoice", invoiceSchema)
+let User, Product, Invoice
 
-// JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
+// Database connection function - modified for serverless
+async function connectToDatabase() {
+  if (mongoose.connection.readyState >= 1) {
+    return
+  }
 
-// Initialize database
-async function initializeDatabase() {
   try {
-    await mongoose.connect(MONGODB_URI)
+    console.log("Connecting to MongoDB...")
+    await mongoose.connect(MONGODB_URI, mongooseOptions)
     console.log("Connected to MongoDB database")
 
-    // Check if admin user exists, if not create one
-    const adminUser = await User.findOne({ email: "shahidsharif520@gmail.com" })
-
-    if (!adminUser) {
-      const hashedPassword = await bcrypt.hash("admin@520", 10)
-      await User.create({
-        email: "shahidsharif520@gmail.com",
-        password: hashedPassword,
-      })
-      console.log("Admin user created")
+    // Only create models if they don't exist
+    if (!User) {
+      User = mongoose.models.User || mongoose.model("User", userSchema)
+      Product = mongoose.models.Product || mongoose.model("Product", productSchema)
+      Invoice = mongoose.models.Invoice || mongoose.model("Invoice", invoiceSchema)
     }
   } catch (error) {
-    console.error("Database initialization error:", error)
+    console.error("Database connection error:", error)
     throw error
   }
 }
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -148,12 +154,15 @@ const authenticateToken = (req, res, next) => {
 
 // Routes
 app.get("/", async (req, res) => {
+  await connectToDatabase()
   res.send("Hello World")
 })
 
 // Auth routes
 app.post("/api/auth/login", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const { email, password } = req.body
 
     if (!email || !password) {
@@ -188,6 +197,8 @@ app.post("/api/auth/login", async (req, res) => {
 // Product routes
 app.get("/api/products", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const products = await Product.find().sort({ created_at: -1 })
     res.json(products)
   } catch (error) {
@@ -198,6 +209,8 @@ app.get("/api/products", async (req, res) => {
 
 app.get("/api/products/:id", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const product = await Product.findById(req.params.id)
 
     if (!product) {
@@ -213,6 +226,8 @@ app.get("/api/products/:id", async (req, res) => {
 
 app.post("/api/products", authenticateToken, upload.single("image"), async (req, res) => {
   try {
+    await connectToDatabase()
+
     const { name, price, description } = req.body
 
     if (!name || !price || !req.file) {
@@ -235,6 +250,8 @@ app.post("/api/products", authenticateToken, upload.single("image"), async (req,
 
 app.put("/api/products/:id", authenticateToken, upload.single("image"), async (req, res) => {
   try {
+    await connectToDatabase()
+
     const { name, price, description } = req.body
     const productId = req.params.id
 
@@ -280,6 +297,8 @@ app.put("/api/products/:id", authenticateToken, upload.single("image"), async (r
 
 app.delete("/api/products/:id", authenticateToken, async (req, res) => {
   try {
+    await connectToDatabase()
+
     const productId = req.params.id
 
     const existingProduct = await Product.findById(productId)
@@ -306,6 +325,8 @@ app.delete("/api/products/:id", authenticateToken, async (req, res) => {
 // Invoice routes
 app.get("/api/invoices", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const invoices = await Invoice.find().sort({ date: -1 })
     res.json(invoices)
   } catch (error) {
@@ -316,6 +337,8 @@ app.get("/api/invoices", async (req, res) => {
 
 app.get("/api/invoices/:id", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const invoice = await Invoice.findOne({ id: req.params.id })
 
     if (!invoice) {
@@ -331,6 +354,8 @@ app.get("/api/invoices/:id", async (req, res) => {
 
 app.post("/api/invoices", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const { id, customerName, customerPhone, customerAddress, date, items, subtotal, tax, total } = req.body
 
     // Log the entire request body for debugging
@@ -385,6 +410,8 @@ app.post("/api/invoices", async (req, res) => {
 
 app.delete("/api/invoices/:id", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const invoiceId = req.params.id
 
     const existingInvoice = await Invoice.findOne({ id: invoiceId })
@@ -405,6 +432,8 @@ app.delete("/api/invoices/:id", async (req, res) => {
 // Stats route
 app.get("/api/stats", async (req, res) => {
   try {
+    await connectToDatabase()
+
     const totalProducts = await Product.countDocuments()
     const totalInvoices = await Invoice.countDocuments()
     const totalRevenueResult = await Invoice.aggregate([{ $group: { _id: null, sum: { $sum: "$total" } } }])
@@ -424,6 +453,8 @@ app.get("/api/stats", async (req, res) => {
 // Test endpoint to verify database connection
 app.get("/api/test", async (req, res) => {
   try {
+    await connectToDatabase()
+
     // Try a simple query
     const collections = await mongoose.connection.db.listCollections().toArray()
     res.json({
@@ -451,16 +482,22 @@ app.use((err, req, res, next) => {
   })
 })
 
-// Start server with better error handling
-initializeDatabase()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`)
+// For local development
+if (process.env.NODE_ENV !== "production") {
+  // Initialize database and start server
+  connectToDatabase()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`)
+      })
     })
-  })
-  .catch((err) => {
-    console.error("Failed to initialize database:", err)
-    console.error("Error stack:", err.stack)
-    process.exit(1)
-  })
+    .catch((err) => {
+      console.error("Failed to initialize database:", err)
+      console.error("Error stack:", err.stack)
+      process.exit(1)
+    })
+}
+
+// For Vercel serverless deployment
+export default app
 
