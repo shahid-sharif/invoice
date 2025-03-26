@@ -57,13 +57,7 @@ const upload = multer({
 })
 
 // Middleware
-app.use(
-  cors({
-    origin: ["https://invoice-builder-madina-shop.vercel.app", "http://localhost:5173"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    credentials: true,
-  }),
-)
+app.use(cors())
 app.use(express.json())
 
 // MongoDB connection
