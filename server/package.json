@@ -2,7 +2,7 @@
   "name": "invoice-builder-server",
   "version": "1.0.0",
   "description": "Invoice Builder API Server",
-  "main": "server.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
     "start": "node app.js",

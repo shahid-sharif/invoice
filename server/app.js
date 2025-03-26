@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken"
 import { v2 as cloudinary } from "cloudinary"
 import { CloudinaryStorage } from "multer-storage-cloudinary"
 import dotenv from "dotenv"
+import { defaultMaxListeners } from "events"
 
 // Load environment variables
 dotenv.config()
@@ -464,3 +465,5 @@ initializeDatabase()
     process.exit(1)
   })
 
+
+  export default app;
