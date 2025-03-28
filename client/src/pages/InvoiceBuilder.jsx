@@ -201,12 +201,12 @@ const InvoiceBuilder = () => {
           fontStyle: "bold",
           halign: "center",
         },
-        columnStyles: {
-          0: { cellWidth: 10, halign: "center" },
+         columnStyles: {
+          0: { cellWidth: 12, halign: "center" },
           1: { cellWidth: 60 },
-          2: { cellWidth: 10, halign: "center" },
-          3: { cellWidth: 15, halign: "right" },
-          4: { cellWidth: 15, halign: "right" },
+          2: { cellWidth: 12, halign: "center" },
+          3: { cellWidth: 23, halign: "right" },
+          4: { cellWidth: 23, halign: "right" },
         },
         margin: { left: 10, right: 10 },
         didDrawCell: (data) => {
