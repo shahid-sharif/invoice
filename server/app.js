@@ -85,7 +85,20 @@ app.options("*", cors({
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI 
-//hello
+
+// MongoDB connection with retry logic
+async function connectDatabase() {
+  try {
+    if (MONGODB_URI) {
+      await mongoose.connect(MONGODB_URI)
+      console.log("Connected to MongoDB database")
+    } else {
+      console.warn("MONGODB_URI not set, running without database")
+    }
+  } catch (error) {
+    console.error("Database connection error:", error.message)
+  }
+}
 // MongoDB Schemas
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
@@ -125,6 +138,11 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 // Initialize database
 async function initializeDatabase() {
   try {
+    if (!MONGODB_URI) {
+      console.warn("MONGODB_URI not set, skipping database initialization")
+      return
+    }
+
     await mongoose.connect(MONGODB_URI)
     console.log("Connected to MongoDB database")
 
@@ -141,7 +159,7 @@ async function initializeDatabase() {
     }
   } catch (error) {
     console.error("Database initialization error:", error)
-    throw error
+    // Don't throw, just log the error so server still starts
   }
 }
 
@@ -477,9 +495,10 @@ initializeDatabase()
     })
   })
   .catch((err) => {
-    console.error("Failed to initialize database:", err)
-    console.error("Error stack:", err.stack)
-    process.exit(1)
+    console.error("Database initialization failed, but starting server anyway:", err)
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} (without database)`)
+    })
   })
 
 
