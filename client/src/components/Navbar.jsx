@@ -15,7 +15,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
             <Link to="/" className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              Stock Management System
+              Al Madina Solar Shop
             </Link>
             
             {/* Public Navigation */}
