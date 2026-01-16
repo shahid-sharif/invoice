@@ -47,3 +47,31 @@
   }
 }
 
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+  }
+  
+  table {
+    border-collapse: collapse !important;
+  }
+  
+  table, th, td {
+    border: 1px solid black !important;
+  }
+  
+  th {
+    background: #3b82f6 !important;
+    color: white !important;
+  }
+}

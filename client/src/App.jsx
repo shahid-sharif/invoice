@@ -5,6 +5,7 @@ import { ThemeProvider } from "./contexts/ThemeContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Login from "./pages/Login"
 import SalesPage from "./pages/SalesPage"
+import InvoicePreview from "./pages/InvoicePreview"
 import AdminDashboard from "./pages/AdminDashboard"
 import ProductManagement from "./pages/ProductManagement"
 import CategoryManagement from "./pages/CategoryManagement"
@@ -25,6 +26,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/sales" replace />} />
                 <Route path="/sales" element={<SalesPage />} />
+                <Route path="/invoice-preview" element={<InvoicePreview />} />
                 <Route path="/login" element={<Login />} />
                 <Route
                   path="/admin"

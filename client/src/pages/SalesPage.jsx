@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { toast } from "react-hot-toast"
-import { jsPDF } from "jspdf"
-import "jspdf-autotable"
-import { Search, ShoppingCart, Download, Trash2, Plus, Minus, Scan, RefreshCw } from "lucide-react"
+import { Search, ShoppingCart, Trash2, Plus, Minus, RefreshCw } from "lucide-react"
 
 const API_URL = import.meta.env.VITE_API_URL
 
 const SalesPage = () => {
+  const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -173,8 +173,20 @@ const SalesPage = () => {
 
       toast.success(`Sale completed! Profit: Rs ${(data.total_profit || 0).toFixed(2)}`)
       
-      // Generate and download invoice PDF
-      generateInvoicePDF(saleId, saleData, data.total_profit)
+      // Navigate to invoice preview page
+      navigate('/invoice-preview', {
+        state: {
+          invoiceData: {
+            saleId,
+            customerName: saleData.customerName,
+            customerPhone: saleData.customerPhone,
+            customerAddress: saleData.customerAddress,
+            items: saleData.items,
+            subtotal: saleData.subtotal,
+            total: saleData.total,
+          }
+        }
+      })
       
       // Clear cart and customer info
       clearCart()
@@ -184,64 +196,6 @@ const SalesPage = () => {
     } catch (error) {
       toast.error(error.message)
     }
-  }
-
-  const generateInvoicePDF = (saleId, saleData, profit) => {
-    const doc = new jsPDF()
-
-    // Header
-    doc.setFontSize(20)
-    doc.setFont("helvetica", "bold")
-    doc.text("SALES INVOICE", 105, 20, { align: "center" })
-
-    doc.setFontSize(10)
-    doc.setFont("helvetica", "normal")
-    doc.text(`Invoice #: ${saleId}`, 20, 35)
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 40)
-    doc.text(`Time: ${new Date().toLocaleTimeString()}`, 20, 45)
-
-    // Customer Details
-    doc.setFont("helvetica", "bold")
-    doc.text("Customer Details:", 20, 55)
-    doc.setFont("helvetica", "normal")
-    doc.text(`Name: ${saleData.customerName}`, 20, 60)
-    if (saleData.customerPhone) {
-      doc.text(`Phone: ${saleData.customerPhone}`, 20, 65)
-    }
-    if (saleData.customerAddress) {
-      doc.text(`Address: ${saleData.customerAddress}`, 20, 70)
-    }
-
-    // Items Table
-    const tableData = cart.map((item) => [
-      item.name,
-      item.barcode,
-      item.quantity,
-      `Rs ${(item.selling_price || 0).toFixed(2)}`,
-      `Rs ${((item.selling_price || 0) * item.quantity).toFixed(2)}`,
-    ])
-
-    doc.autoTable({
-      startY: 80,
-      head: [["Product", "Barcode", "Qty", "Price", "Total"]],
-      body: tableData,
-      theme: "grid",
-      headStyles: { fillColor: [59, 130, 246] },
-    })
-
-    // Totals
-    const finalY = doc.lastAutoTable.finalY + 10
-    doc.setFont("helvetica", "bold")
-    doc.text(`Subtotal: Rs ${(saleData.subtotal || 0).toFixed(2)}`, 140, finalY)
-    doc.text(`Total: Rs ${(saleData.total || 0).toFixed(2)}`, 140, finalY + 7)
-
-    // Footer
-    doc.setTextColor(0, 0, 0)
-    doc.setFont("helvetica", "italic")
-    doc.setFontSize(9)
-    doc.text("Thank you for your business!", 105, finalY + 20, { align: "center" })
-
-    doc.save(`Invoice_${saleId}.pdf`)
   }
 
   const filteredProducts = products.filter((product) => {
@@ -463,8 +417,7 @@ const SalesPage = () => {
               disabled={cart.length === 0}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              <Download className="w-5 h-5" />
-              Complete Sale & Print Invoice
+              Complete Sale
             </button>
           </div>
         </div>
